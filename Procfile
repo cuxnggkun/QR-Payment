@@ -1,0 +1,1 @@
+worker: python qr_payment_bot.py
