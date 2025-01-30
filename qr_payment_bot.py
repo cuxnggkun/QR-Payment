@@ -13,6 +13,7 @@ BANK_ID = os.getenv('BANK_ID', '970436')
 ACCOUNT_NO = os.getenv('ACCOUNT_NO')
 ACCOUNT_NAME = os.getenv('ACCOUNT_NAME')
 
+
 def generate_vietqr_content(amount: float, message: str = ""):
     """
     Generate VietQR content with proper URL encoding
@@ -20,16 +21,17 @@ def generate_vietqr_content(amount: float, message: str = ""):
     # Ensure all components are properly encoded
     encoded_account_name = quote(ACCOUNT_NAME)
     encoded_message = quote(message)
-    
+
     # Format according to VietQR standard
     qr_url = f"https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-compact.png"
     qr_url += f"?amount={int(amount)}"
     if message:
         qr_url += f"&addInfo={encoded_message}"
     qr_url += f"&accountName={encoded_account_name}"
-    
+
     print(f"Generated QR URL: {qr_url}")  # For debugging
     return qr_url
+
 
 class QRPaymentBot(discord.Client):
     def __init__(self):
@@ -45,7 +47,9 @@ class QRPaymentBot(discord.Client):
         except Exception as e:
             print(f"Error synchronizing commands: {e}")
 
+
 bot = QRPaymentBot()
+
 
 @bot.tree.command(name="thanhtoan", description="Tạo mã QR thanh toán ngân hàng")
 @app_commands.describe(
@@ -90,7 +94,7 @@ async def generate_qr(
             value=f"```\nTổng tiền: {total_price:,} VNĐ\nNội dung CK: {message}\n```",
             inline=False
         )
-        
+
         # Set the encoded QR URL
         try:
             embed.set_image(url=qr_url)
@@ -108,6 +112,54 @@ async def generate_qr(
     except Exception as e:
         print(f"Error: {e}")
         await interaction.followup.send('❌ Có lỗi xảy ra. Vui lòng thử lại sau.')
+
+
+@bot.tree.command(name="sendmsg", description="Gửi tin nhắn trực tiếp đến user")
+@app_commands.describe(
+    user="Người dùng cần gửi tin nhắn",
+    message="Nội dung tin nhắn cần gửi"
+)
+async def send_direct_message(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    message: str
+):
+    try:
+        # Defer the response to avoid timeout
+        # ephemeral=True để chỉ người dùng lệnh nhìn thấy
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            # Tạo DM channel và gửi tin nhắn
+            dm_channel = await user.create_dm()
+            await dm_channel.send(message)
+
+            # Thông báo gửi thành công
+            await interaction.followup.send(
+                f"✅ Đã gửi tin nhắn đến {user.name}!",
+                ephemeral=True
+            )
+        except discord.Forbidden:
+            # Trường hợp không thể gửi DM (user chặn DM)
+            await interaction.followup.send(
+                f"❌ Không thể gửi tin nhắn đến {user.name}. Người dùng có thể đã chặn DM.",
+                ephemeral=True
+            )
+        except Exception as e:
+            # Các lỗi khác
+            print(f"Error sending DM: {e}")
+            await interaction.followup.send(
+                "❌ Có lỗi xảy ra khi gửi tin nhắn.",
+                ephemeral=True
+            )
+
+    except Exception as e:
+        print(f"Error: {e}")
+        await interaction.followup.send(
+            "❌ Có lỗi xảy ra. Vui lòng thử lại sau.",
+            ephemeral=True
+        )
+
 
 @bot.event
 async def on_ready():
