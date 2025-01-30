@@ -125,14 +125,14 @@ async def send_direct_message(
     message: str
 ):
     try:
-        # Defer the response to avoid timeout
-        # ephemeral=True để chỉ người dùng lệnh nhìn thấy
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Tạo DM channel và gửi tin nhắn
+            # Tạo DM channel và gửi tin nhắn trong code block
             dm_channel = await user.create_dm()
-            await dm_channel.send(message)
+            # Wrap message in code block
+            formatted_message = f"```\n{message}\n```"
+            await dm_channel.send(formatted_message)
 
             # Thông báo gửi thành công
             await interaction.followup.send(
@@ -140,13 +140,11 @@ async def send_direct_message(
                 ephemeral=True
             )
         except discord.Forbidden:
-            # Trường hợp không thể gửi DM (user chặn DM)
             await interaction.followup.send(
                 f"❌ Không thể gửi tin nhắn đến {user.name}. Người dùng có thể đã chặn DM.",
                 ephemeral=True
             )
         except Exception as e:
-            # Các lỗi khác
             print(f"Error sending DM: {e}")
             await interaction.followup.send(
                 "❌ Có lỗi xảy ra khi gửi tin nhắn.",
