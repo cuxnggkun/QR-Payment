@@ -128,13 +128,37 @@ async def send_direct_message(
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Tạo DM channel và gửi tin nhắn trong code block
             dm_channel = await user.create_dm()
-            # Wrap message in code block
-            formatted_message = f"```\n{message}\n```"
-            await dm_channel.send(formatted_message)
 
-            # Thông báo gửi thành công
+            # Tách chuỗi thành các cặp dựa trên khoảng trắng
+            pairs = message.split()
+            formatted_lines = []
+
+            # Xử lý từng cặp 3 phần tử (tk - mk)
+            for i in range(0, len(pairs), 3):
+                if i + 2 < len(pairs):  # Đảm bảo đủ 3 phần tử cho mỗi dòng
+                    acc = pairs[i]
+                    dash = pairs[i+1]  # Dấu -
+                    pwd = pairs[i+2]
+                    formatted_lines.append(f"{acc} {dash} {pwd}")
+
+            # Join các dòng thành text
+            accounts_text = '\n'.join(formatted_lines)
+
+            # Tạo embed để gửi
+            embed = discord.Embed(
+                title="🔑 Thông tin tài khoản",
+                description=f"Format: `username - password`\nSố lượng: `{len(formatted_lines)} key`\n\n" +
+                f"```\n{accounts_text}\n```" if formatted_lines else "",
+                color=discord.Color.blue()
+            )
+
+            embed.set_footer(
+                text="Lưu ý: Mỗi dòng là một tài khoản và mật khẩu")
+
+            # Gửi embed
+            await dm_channel.send(embed=embed)
+
             await interaction.followup.send(
                 f"✅ Đã gửi tin nhắn đến {user.name}!",
                 ephemeral=True
