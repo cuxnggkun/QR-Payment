@@ -13,6 +13,9 @@ BANK_ID = os.getenv('BANK_ID', '970436')
 ACCOUNT_NO = os.getenv('ACCOUNT_NO')
 ACCOUNT_NAME = os.getenv('ACCOUNT_NAME')
 
+# Thêm hằng số cho ROLE_ID
+CUSTOMER_ROLE_ID = 1334194617322831935
+
 
 def generate_vietqr_content(amount: float, message: str = ""):
     """
@@ -128,6 +131,15 @@ async def send_direct_message(
         await interaction.response.defer(ephemeral=True)
 
         try:
+            # Kiểm tra và thêm role cho user
+            role_added = await check_and_add_role(user, CUSTOMER_ROLE_ID)
+            if not role_added:
+                await interaction.followup.send(
+                    "❌ Không thể thêm role cho user. Vui lòng kiểm tra lại quyền của bot.",
+                    ephemeral=True
+                )
+                return
+
             dm_channel = await user.create_dm()
 
             # Tách chuỗi thành các cặp dựa trên khoảng trắng
@@ -160,7 +172,7 @@ async def send_direct_message(
             await dm_channel.send(embed=embed)
 
             await interaction.followup.send(
-                f"✅ Đã gửi tin nhắn đến {user.name}!",
+                f"✅ Đã gửi tin nhắn đến {user.name} và thêm role!",
                 ephemeral=True
             )
         except discord.Forbidden:
@@ -186,6 +198,30 @@ async def send_direct_message(
 @bot.event
 async def on_ready():
     print(f'🤖 {bot.user} đã sẵn sàng!')
+
+# Thêm hàm kiểm tra và thêm role
+
+
+async def check_and_add_role(member: discord.Member, role_id: int):
+    """
+    Kiểm tra và thêm role cho member nếu chưa có
+    """
+    try:
+        # Lấy role từ ID
+        role = member.guild.get_role(role_id)
+        if not role:
+            print(f"Không tìm thấy role với ID {role_id}")
+            return False
+
+        # Kiểm tra xem member đã có role chưa
+        if role not in member.roles:
+            await member.add_roles(role)
+            print(f"Đã thêm role {role.name} cho {member.name}")
+            return True
+        return True
+    except Exception as e:
+        print(f"Lỗi khi thêm role: {e}")
+        return False
 
 # Run the bot
 bot.run(DISCORD_TOKEN)
