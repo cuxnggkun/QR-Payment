@@ -16,6 +16,9 @@ ACCOUNT_NAME = os.getenv('ACCOUNT_NAME')
 # Thêm hằng số cho ROLE_ID
 CUSTOMER_ROLE_ID = 1334194617322831935
 
+# Thêm hằng số cho LOG_CHANNEL_ID
+LOG_CHANNEL_ID = 1336368295363874909
+
 
 def generate_vietqr_content(amount: float, message: str = ""):
     """
@@ -157,19 +160,53 @@ async def send_direct_message(
             # Join các dòng thành text
             accounts_text = '\n'.join(formatted_lines)
 
-            # Tạo embed để gửi
-            embed = discord.Embed(
+            # Tạo embed để gửi cho user
+            user_embed = discord.Embed(
                 title="🔑 Thông tin tài khoản",
                 description=f"Format: `username - password`\nSố lượng: `{len(formatted_lines)} key`\n\n" +
                 f"```\n{accounts_text}\n```" if formatted_lines else "",
                 color=discord.Color.blue()
             )
-
-            embed.set_footer(
+            user_embed.set_footer(
                 text="Lưu ý: Mỗi dòng là một tài khoản và mật khẩu")
 
-            # Gửi embed
-            await dm_channel.send(embed=embed)
+            # Gửi embed cho user
+            await dm_channel.send(embed=user_embed)
+
+            # Tạo embed để ghi log
+            log_embed = discord.Embed(
+                title="📝 Log Gửi Key",
+                description="Chi tiết giao dịch:",
+                color=discord.Color.green(),
+                timestamp=interaction.created_at
+            )
+            log_embed.add_field(
+                name="Người gửi",
+                value=f"{interaction.user.mention} (`{interaction.user.name}`)",
+                inline=True
+            )
+            log_embed.add_field(
+                name="Người nhận",
+                value=f"{user.mention} (`{user.name}`)",
+                inline=True
+            )
+            log_embed.add_field(
+                name="Số lượng key",
+                value=f"`{len(formatted_lines)} key`",
+                inline=True
+            )
+            log_embed.add_field(
+                name="Danh sách key",
+                value=f"```\n{accounts_text}\n```",
+                inline=False
+            )
+
+            # Gửi log vào channel
+            log_channel = bot.get_channel(LOG_CHANNEL_ID)
+            if log_channel:
+                await log_channel.send(embed=log_embed)
+            else:
+                print(f"Không tìm thấy channel log với ID {LOG_CHANNEL_ID}")
 
             await interaction.followup.send(
                 f"✅ Đã gửi tin nhắn đến {user.name} và thêm role!",
