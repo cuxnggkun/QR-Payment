@@ -120,6 +120,69 @@ async def generate_qr(
         await interaction.followup.send('❌ Có lỗi xảy ra. Vui lòng thử lại sau.')
 
 
+@bot.tree.command(name="giahan", description="Tạo mã QR gia hạn")
+@app_commands.describe(
+    amount="Số lượng key cần gia hạn",
+)
+async def extend_subscription(
+    interaction: discord.Interaction,
+    amount: int,
+):
+    try:
+        # Validate key amount
+        if amount <= 0:
+            await interaction.response.send_message("❌ Số lượng key phải lớn hơn 0!")
+            return
+
+        # Calculate price based on quantity
+        total_price = 250000 * amount if amount >= 10 else 275000 * amount
+
+        await interaction.response.defer()
+
+        # Generate VietQR URL with encoded parameters
+        message = f"Gia han - {interaction.user.name}"
+        qr_url = generate_vietqr_content(total_price, message)
+
+        # Create embed with payment information
+        embed = discord.Embed(
+            title="💳 Thông tin gia hạn",
+            description=f"**Số lượng key:** {amount} key\n**Đơn giá:** {250000 if amount >= 10 else 275000:,} VNĐ/key",
+            color=0x00ff00
+        )
+
+        # Thông tin ngân hàng
+        embed.add_field(
+            name="🏦 Thông tin tài khoản",
+            value=f"```\nNgân hàng: BIDV\nChủ TK: {ACCOUNT_NAME}\nSố TK: {ACCOUNT_NO}\n```",
+            inline=False
+        )
+
+        # Thông tin thanh toán
+        embed.add_field(
+            name="💰 Chi tiết thanh toán",
+            value=f"```\nTổng tiền: {total_price:,} VNĐ\nNội dung CK: {message}\n```",
+            inline=False
+        )
+
+        # Set the encoded QR URL
+        try:
+            embed.set_image(url=qr_url)
+        except Exception as e:
+            print(f"Error setting image URL: {e}")
+            await interaction.followup.send("❌ Không thể tạo mã QR. Vui lòng thử lại sau.")
+            return
+
+        embed.set_footer(text=f"Yêu cầu bởi: {interaction.user.name}")
+
+        await interaction.followup.send(embed=embed)
+
+    except ValueError:
+        await interaction.followup.send('❌ Vui lòng nhập một số hợp lệ.')
+    except Exception as e:
+        print(f"Error: {e}")
+        await interaction.followup.send('❌ Có lỗi xảy ra. Vui lòng thử lại sau.')
+
+
 @bot.tree.command(name="sendmsg", description="Gửi tin nhắn trực tiếp đến user")
 @app_commands.describe(
     user="Người dùng cần gửi tin nhắn",
