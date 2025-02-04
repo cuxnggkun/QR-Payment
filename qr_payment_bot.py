@@ -145,25 +145,20 @@ async def send_direct_message(
 
             dm_channel = await user.create_dm()
 
-            # Tách chuỗi thành các dòng
-            lines = message.split('\n')
+            # Tách chuỗi thành các cặp dựa trên khoảng trắng
+            pairs = message.split()
             formatted_lines = []
 
-            # Xử lý từng dòng riêng biệt
-            for line in lines:
-                if line.strip():  # Chỉ xử lý các dòng không trống
-                    formatted_lines.append(line.strip())
+            # Xử lý từng cặp 3 phần tử (tk - mk)
+            for i in range(0, len(pairs), 3):
+                if i + 2 < len(pairs):  # Đảm bảo đủ 3 phần tử cho mỗi dòng
+                    acc = pairs[i]
+                    dash = pairs[i+1]  # Dấu -
+                    pwd = pairs[i+2]
+                    formatted_lines.append(f"{acc} {dash} {pwd}")
 
             # Join các dòng thành text
             accounts_text = '\n'.join(formatted_lines)
-
-            # Kiểm tra số lượng key thực tế
-            actual_count = len(formatted_lines)
-            if actual_count != len(message.strip().split('\n')):
-                await interaction.followup.send(
-                    f"⚠️ Cảnh báo: Số lượng key không khớp. Đã xử lý {actual_count} key.",
-                    ephemeral=True
-                )
 
             # Tạo embed để gửi cho user
             user_embed = discord.Embed(
